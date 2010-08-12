@@ -1,49 +1,47 @@
-from setuptools import setup, find_packages
-import sys, os
-
-version = '1.9'
-
-README = os.path.join(os.path.dirname(__file__), 'README.md')
-long_description = open(README).read().strip() + "\n\n"
-def md2stx(s):
-    import re
-    s = re.sub(':\n(\s{8,10})', r'::\n\1', s)
-    return s
-long_description = md2stx(long_description)
+from distutils.core import setup
+import os
 
 
-setup(name='premailer',
-      version=version,
-      description="Turns CSS blocks into style attributes",
-      long_description=long_description,
-      keywords='html lxml email mail style',
-      author='Peter Bengtsson',
-      author_email='peter@fry-it.com',
-      url='http://www.peterbe.com/plog/premailer.py',
-      download_url='http://pypi.python.org/pypi/premailer/',
-      license='Python',
-      classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Environment :: Other Environment",
-        "Environment :: Web Environment",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: Python Software Foundation License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Topic :: Communications",
-        "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Other/Nonlisted Topic",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-      ],
-      packages=find_packages(),
-      include_package_data=True,
-      test_suite='nose.collector',
-      tests_require=['Nose'],
-      zip_safe=True,
-      install_requires=[
-        'lxml',
-      ],
-      entry_points="""
-      # -*- Entry points: -*-
-      """,
-      )
+def fullsplit(path, result=None):
+    """
+    Split a pathname into components (the opposite of os.path.join) in a
+    platform-neutral way.
+
+    """
+    if result is None:
+        result = []
+    head, tail = os.path.split(path)
+    if head == '':
+        return [tail] + result
+    if head == path:
+        return result
+    return fullsplit(head, [tail] + result)
+
+packages = []
+root_dir = os.path.dirname(__file__).join('default')
+
+for dirpath, dirname, filename in os.walk(root_dir):
+    if '__init__.py' in filename:
+        packages.append('.'.join(fullsplit(dirpath)))
+
+setup(
+    name = 'premailer',
+    version = '2.0',
+    url = 'http://github.com/rcoyner/premailer',
+    author = 'Ryan Coyner',
+    author_email = 'rcoyner@gmail.com',
+    description = 'Converts standard HTML into a format for e-mail delivery.',
+    packages = packages,
+    classifiers = ['Development Status :: 5 - Production/Stable',
+                   'Environment :: X11 Applications',
+                   'Environment :: Other Environment',
+                   'Environment :: Web Environment',
+                   'Intended Audience :: Developers',
+                   'License :: OSI Approved :: Python Software Foundation License',
+                   'Operating System :: OS Independent',
+                   'Programming Language :: Python',
+                   'Topic :: Communications',
+                   'Topic :: Internet :: WWW/HTTP',
+                   'Topic :: Software Development :: Libraries :: Python Modules',
+                  ],
+)
