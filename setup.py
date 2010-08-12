@@ -18,7 +18,7 @@ def fullsplit(path, result=None):
     return fullsplit(head, [tail] + result)
 
 packages = []
-root_dir = os.path.dirname(__file__).join('default')
+root_dir = os.path.dirname(__file__).join('premailer')
 
 for dirpath, dirname, filename in os.walk(root_dir):
     if '__init__.py' in filename:
@@ -27,7 +27,7 @@ for dirpath, dirname, filename in os.walk(root_dir):
 setup(
     name = 'premailer',
     version = '2.0',
-    url = 'http://github.com/rcoyner/premailer',
+    url = 'http://github.com/rcoyner/python-premailer',
     author = 'Ryan Coyner',
     author_email = 'rcoyner@gmail.com',
     description = 'Converts standard HTML into a format for e-mail delivery.',
