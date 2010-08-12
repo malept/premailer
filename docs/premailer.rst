@@ -6,8 +6,8 @@
 .. moduleauthor:: Peter Bengtsson <peter@fry-it.com>
 .. sectionauthor:: Ryan Coyner <rcoyner@gmail.com>
 
-Premailer transforms standard HTML into a format best suited for e-mail delivery
-by creating inline CSS styles.
+Python-Premailer transforms standard HTML into a format best suited for e-mail
+delivery by creating inline CSS styles.
 
 
 Style Tags
@@ -40,7 +40,7 @@ is transformed into::
 Relative URLs
 -------------
 
-Premailer transforms relative URLs in a HTML page into absolute URLs for all
+Relative URLs in a HTML page are transformed into absolute URLs for all
 ``href`` and ``src`` attributes that are missing a protocol prefix (i.e.
 http://). For example, the following::
 

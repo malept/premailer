@@ -1,7 +1,7 @@
-Premailer
-=========
+Python-Premailer
+================
 
-Premailer transforms standard HTML into a format best suited for e-mail
+Python-Premailer transforms standard HTML into a format best suited for e-mail
 delivery by creating inline CSS styles.
 
 
