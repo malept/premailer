@@ -461,8 +461,8 @@ class PremailerTestCase(unittest.TestCase):
         result_html = p.transform()
         assert '<html>' in result_html
         assert """<style media="only screen and (max-device-width: 480px)" type="text/css">
-    * {line-height: normal !important; -webkit-text-size-adjust: 125%}
-    </style>""" in result_html
+* {line-height: normal !important; -webkit-text-size-adjust: 125%}
+</style>""" in result_html
         _p = result_html.find('Add this to your calendar')
         assert '''style="{color:#5b7ab3; font-size:11px; font-family:Lucida Grande, Arial, Helvetica, Geneva, Verdana, sans-serif} :link{color:#5b7ab3; text-decoration:none} :visited{color:#5b7ab3; text-decoration:none} :hover{color:#5b7ab3; text-decoration:underline} :active{color:#5b7ab3; text-decoration:none}">Add this to your calendar''' in result_html
 
