@@ -1,0 +1,26 @@
+Python-Premailer
+================
+
+Python-Premailer transforms standard HTML into a format best suited for e-mail
+delivery by creating inline CSS styles.
+
+
+Documentation
+-------------
+
+Extensive documentation and installation instructions can be found in the
+``docs`` directory of this source distribution.
+
+
+Dependencies
+------------
+
+Python 2.5+ - http://www.python.org/
+python-lxml - http://pypi.python.org/pypi/lxml
+
+
+Support
+-------
+
+For any feature requests or issues regarding this project, please e-mail
+rcoyner@gmail.com.
