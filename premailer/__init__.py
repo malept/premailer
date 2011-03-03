@@ -30,13 +30,13 @@ def _merge_styles(old, new, class_=''):
       new = 'font-size:2px; font-weight: bold'
     then ::
       return 'color: red; font-size:2px; font-weight: bold'
-      
+
     In other words, the new style bits replace the old ones.
-    
+
     The @class_ parameter can be something like ':hover' and if that
     is there, you split up the style with '{...} :hover{...}'
     Note: old could be something like '{...} ::first-letter{...}'
-    
+
     """
     news = {}
     for k, v in [x.strip().split(':', 1) for x in new.split(';') if x.strip()]:
@@ -208,10 +208,10 @@ class Premailer(object):
           .replace('<head/>','<head></head>')
 
     def _style_to_basic_html_attributes(self, element, style_content):
-        """given an element and styles like 
+        """given an element and styles like
         'background-color:red; font-family:Arial' turn some of that into HTML
         attributes. like 'bgcolor', etc.
-        
+
         Note, the style_content can contain pseudoclasses like:
         '{color:red; border:1px solid green} :visited{border:1px solid green}'
         """
