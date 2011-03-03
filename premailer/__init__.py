@@ -184,9 +184,8 @@ class Premailer(object):
                 self._style_to_basic_html_attributes(item, new_style)
 
         # now we can delete all 'class' attributes
-        for item in page.xpath('//@class'):
-            parent = item.getparent()
-            del parent.attrib['class']
+        for item in page.xpath('//*[@class]'):
+            del item.attrib['class']
 
 
         ##
@@ -196,13 +195,12 @@ class Premailer(object):
         if self.base_url:
 
             for attr in ('href', 'src'):
-                for item in page.xpath("//@%s" % attr):
-                    parent = item.getparent()
+                for item in page.xpath('//*[@%s]' % attr):
                     if attr == 'href' and self.preserve_internal_links \
-                           and parent.attrib[attr].startswith('#'):
+                           and item.attrib[attr].startswith('#'):
                         continue
-                    parent.attrib[attr] = urlparse.urljoin(self.base_url,
-                                                           parent.attrib[attr])
+                    item.attrib[attr] = urlparse.urljoin(self.base_url,
+                                                         item.attrib[attr])
 
         return etree.tostring(page, pretty_print=pretty_print)\
           .replace('<head/>','<head></head>')

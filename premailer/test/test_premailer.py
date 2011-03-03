@@ -489,5 +489,44 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
+    def test_class_removal(self):
+        """Ensure that class attributes are removed from the HTML output"""
+        if not etree:
+            # can't test it
+            return
+
+        html = """<html>
+        <head>
+        <title>Title</title>
+        <style type="text/css">
+        .text { font-family:sans-serif }
+        </style>
+        </head>
+        <body>
+        <h1 class="text">Hi!</h1>
+        <p><strong class="text">Yes!</strong></p>
+        </body>
+        </html>"""
+
+        expect_html = """<html>
+        <head>
+        <title>Title</title>
+        </head>
+        <body>
+        <h1 style="font-family:sans-serif">Hi!</h1>
+        <p><strong style="font-family:sans-serif">Yes!</strong></p>
+        </body>
+        </html>"""
+
+        p = Premailer(html)
+        result_html = p.transform()
+
+        whitespace_between_tags = re.compile('>\s*<',)
+
+        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
+        result_html = whitespace_between_tags.sub('><', result_html).strip()
+
+        self.assertEqual(expect_html, result_html)
+
 if __name__ == '__main__':
         unittest.main()
