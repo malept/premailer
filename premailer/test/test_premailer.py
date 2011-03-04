@@ -18,12 +18,9 @@ from premailer import Premailer, etree
 
 class PremailerTestCase(unittest.TestCase):
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_basic_html(self):
         """test the simplest case"""
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <title>Title</title>
@@ -60,15 +57,11 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
-
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_base_url_fixer(self):
         """if you leave some URLS as /foo and set base_url to
         'http://www.google.com' the URLS become 'http://www.google.com/foo'
         """
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <title>Title</title>
@@ -110,7 +103,7 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
-
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_style_block_with_external_urls(self):
         """
         From http://github.com/peterbe/premailer/issues/#issue/2
@@ -119,10 +112,6 @@ class PremailerTestCase(unittest.TestCase):
           body { background:url(http://example.com/bg.png); }
         the ':' inside '://' is causing a problem
         """
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <title>Title</title>
@@ -158,6 +147,7 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_shortcut_function(self):
         # you don't have to use this approach:
         #   from premailer import Premailer
@@ -166,11 +156,6 @@ class PremailerTestCase(unittest.TestCase):
         # You can do it this way:
         #   from premailer import transform
         #   print transform(html, base_url=base_url)
-
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <style type="text/css">h1{color:#123}</style>
@@ -197,12 +182,9 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_pseudoclasses_included(self):
         "Pick up the pseudoclasses too and include them"
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <style type="text/css">
@@ -236,13 +218,9 @@ class PremailerTestCase(unittest.TestCase):
         self.assertIn(' :hover{text-decoration:none;border:1px solid green}',
                       result_html)
 
-
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_pseudoclasses_excluded(self):
         "Skip things like `a:hover{}` and keep them in the style block"
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <style type="text/css">
@@ -285,14 +263,11 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_html_attributes(self):
         """Some CSS styles can be applied as normal HTML attribute like
         'background-color' can be turned into 'bgcolor'
         """
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <style type="text/css">
@@ -354,14 +329,11 @@ class PremailerTestCase(unittest.TestCase):
         self.assertIsNotNone(result_html.find('Add this to your calendar'))
         self.assertIn('''style="{font-family:Lucida Grande,Arial,Helvetica,Geneva,Verdana,sans-serif;font-size:11px;color:#5b7ab3} :active{color:#5b7ab3;text-decoration:none} :visited{color:#5b7ab3;text-decoration:none} :hover{color:#5b7ab3;text-decoration:underline} :link{color:#5b7ab3;text-decoration:none}">Add this to your calendar''', result_html)
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_mailto_url(self):
         """if you use URL with mailto: protocol, they should stay as mailto:
         when baseurl is used
         """
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <title>Title</title>
@@ -390,12 +362,9 @@ class PremailerTestCase(unittest.TestCase):
 
         self.assertEqual(expect_html, result_html)
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_class_removal(self):
         """Ensure that class attributes are removed from the HTML output"""
-        if not etree:
-            # can't test it
-            return
-
         html = """<html>
         <head>
         <title>Title</title>
