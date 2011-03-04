@@ -13,44 +13,10 @@ if sys.version_info >= (2, 7):
 else:
     import unittest2 as unittest
 
-from premailer import Premailer, etree, _merge_styles, transform
+from premailer import Premailer, etree
 
 
 class PremailerTestCase(unittest.TestCase):
-
-    def test_merge_styles_basic(self):
-        old = 'font-size:1px; color: red'
-        new = 'font-size:2px; font-weight: bold'
-        expect = 'color:red;', 'font-size:2px;', 'font-weight:bold'
-        result = _merge_styles(old, new)
-
-        for each in expect:
-            self.assertIn(each, result)
-
-    def test_merge_styles_with_class(self):
-        old = 'color:red; font-size:1px;'
-        new, class_ = 'font-size:2px; font-weight: bold', ':hover'
-
-        # because we're dealing with dicts (random order) we have to
-        # test carefully.
-        # We expect something like this:
-        #  {color:red; font-size:1px} :hover{font-size:2px; font-weight:bold}
-
-        result = _merge_styles(old, new, class_)
-        self.assertTrue(result.startswith('{'))
-        self.assertTrue(result.endswith('}'))
-        self.assertIn(' :hover{', result)
-        split_regex = re.compile('{([^}]+)}')
-        self.assertEqual(len(split_regex.findall(result)), 2)
-        expect_first = 'color:red', 'font-size:1px'
-        expect_second = 'font-weight:bold', 'font-size:2px'
-
-        for each in expect_first:
-            self.assertIn(each, split_regex.findall(result)[0])
-
-        for each in expect_second:
-            self.assertIn(each, split_regex.findall(result)[1])
-
 
     def test_basic_html(self):
         """test the simplest case"""
@@ -93,59 +59,6 @@ class PremailerTestCase(unittest.TestCase):
         result_html = whitespace_between_tags.sub('><', result_html).strip()
 
         self.assertEqual(expect_html, result_html)
-
-
-    def test_parse_style_rules(self):
-        p = Premailer('html') # won't need the html
-        func = p._parse_style_rules
-        rules, leftover = func("""
-        h1, h2 { color:red; }
-        /* ignore
-            this */
-        strong {
-            text-decoration:none
-            }
-        ul li {  list-style: 2px; }
-        a:hover { text-decoration: underline }
-        """)
-
-        # 'rules' is a list, turn it into a dict for
-        # easier assertion testing
-        rules_dict = {}
-        for k, v in rules:
-            rules_dict[k] = v
-
-        self.assertIn('h1', rules_dict)
-        self.assertIn('h2', rules_dict)
-        self.assertIn('strong', rules_dict)
-        self.assertIn('ul li', rules_dict)
-
-        # order is important
-        rules_keys = [x[0] for x in rules]
-        self.assertLess(rules_keys.index('h1'), rules_keys.index('h2'))
-        self.assertLess(rules_keys.index('strong'), rules_keys.index('ul li'))
-
-        self.assertEqual(rules_dict['h1'], 'color:red')
-        self.assertEqual(rules_dict['h2'], 'color:red')
-        self.assertEqual(rules_dict['strong'], 'text-decoration:none')
-        self.assertEqual(rules_dict['ul li'], 'list-style:2px')
-        self.assertEqual(rules_dict['a:hover'], 'text-decoration:underline')
-
-        p = Premailer('html', exclude_pseudoclasses=True) # won't need the html
-        func = p._parse_style_rules
-        rules, leftover = func("""
-        ul li {  list-style: 2px; }
-        a:hover { text-decoration: underline }
-        """)
-
-        self.assertEqual(len(rules), 1)
-        k, v = rules[0]
-        self.assertEqual(k, 'ul li')
-        self.assertEqual(v, 'list-style:2px')
-
-        self.assertEqual(len(leftover), 1)
-        k, v = leftover[0]
-        self.assertEqual((k, v), ('a:hover', 'text-decoration:underline'))
 
 
     def test_base_url_fixer(self):
@@ -230,7 +143,7 @@ class PremailerTestCase(unittest.TestCase):
         <head>
         <title>Title</title>
         </head>
-        <body style="color:#123; font-family:Omerta; background:url(http://example.com/bg.png)">
+        <body style="color:#123;background:url(http://example.com/bg.png);font-family:Omerta">
         <h1>Hi!</h1>
         </body>
         </html>""" #"
@@ -308,16 +221,6 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        expect_html = """<html>
-        <head>
-        </head>
-        <body>
-        <a href="#" style="color:red;text-decoration:none">Special!</a>
-        <a href="#" style="{color:red; border:1px solid green} :hover{text-decoration:none; border:1px solid green} :visited{border:1px solid green}">Page</a>
-        <p style="::first-letter{float: left; font-size: 300%}">Paragraph</p>
-        </body>
-        </html>"""
-
         p = Premailer(html)
         result_html = p.transform()
 
@@ -325,12 +228,12 @@ class PremailerTestCase(unittest.TestCase):
         # order the style attribute will be written in so we'll look for things
         # manually.
         self.assertIn('<head></head>', result_html)
-        self.assertIn('<p style="::first-letter{font-size:300%; float:left}">'\
+        self.assertIn('<p style="::first-letter{float:left;font-size:300%}">'\
                       'Paragraph</p>', result_html)
 
-        self.assertIn('style="{color:red; border:1px solid green}', result_html)
+        self.assertIn('style="{color:red;border:1px solid green}', result_html)
         self.assertIn(' :visited{border:1px solid green}', result_html)
-        self.assertIn(' :hover{border:1px solid green; text-decoration:none}',
+        self.assertIn(' :hover{text-decoration:none;border:1px solid green}',
                       result_html)
 
 
@@ -358,13 +261,13 @@ class PremailerTestCase(unittest.TestCase):
 
         expect_html = """<html>
         <head>
-        <style type="text/css">a:hover {text-decoration:none}
-        a:hover {border:1px solid green}
-        a:visited {border:1px solid green}p::first-letter {float:left;font-size:300%}
+        <style type="text/css">a:hover{text-decoration:none}
+        a:hover{border:1px solid green}
+        a:visited{border:1px solid green}p::first-letter{float:left;font-size:300%}
         </style>
         </head>
         <body>
-        <a href="#" style="color:red; border:1px solid green">Page</a>
+        <a href="#" style="color:red;border:1px solid green">Page</a>
         <p>Paragraph</p>
         </body>
         </html>"""
@@ -447,11 +350,9 @@ class PremailerTestCase(unittest.TestCase):
                       keep_style_tags=True)
         result_html = p.transform()
         self.assertIn('<html>', result_html)
-        self.assertIn("""<style media="only screen and (max-device-width: 480px)" type="text/css">
-* {line-height: normal !important; -webkit-text-size-adjust: 125%}
-</style>""", result_html)
-        _p = result_html.find('Add this to your calendar')
-        self.assertIn('''style="{color:#5b7ab3; font-size:11px; font-family:Lucida Grande, Arial, Helvetica, Geneva, Verdana, sans-serif} :link{color:#5b7ab3; text-decoration:none} :visited{color:#5b7ab3; text-decoration:none} :hover{color:#5b7ab3; text-decoration:underline} :active{color:#5b7ab3; text-decoration:none}">Add this to your calendar''', result_html)
+        self.assertIn("""<style media="only screen and (max-device-width: 480px)" type="text/css">*{line-height:normal !important;-webkit-text-size-adjust:125%}</style>""", result_html)
+        self.assertIsNotNone(result_html.find('Add this to your calendar'))
+        self.assertIn('''style="{font-family:Lucida Grande,Arial,Helvetica,Geneva,Verdana,sans-serif;font-size:11px;color:#5b7ab3} :active{color:#5b7ab3;text-decoration:none} :visited{color:#5b7ab3;text-decoration:none} :hover{color:#5b7ab3;text-decoration:underline} :link{color:#5b7ab3;text-decoration:none}">Add this to your calendar''', result_html)
 
     def test_mailto_url(self):
         """if you use URL with mailto: protocol, they should stay as mailto:

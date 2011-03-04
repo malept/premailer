@@ -1,11 +1,10 @@
 # http://www.peterbe.com/plog/premailer.py
-import codecs
+from collections import defaultdict
 import os
 import re
-import urllib
 import urlparse
 
-import lxml.html
+import cssutils
 from lxml.cssselect import CSSSelector
 from lxml import etree
 
@@ -13,69 +12,9 @@ __version__ = '1.9'
 
 __all__ = ['PremailerError', 'Premailer', 'transform']
 
-_CSS_COMMENTS = re.compile(r'/\*.*?\*/', re.MULTILINE|re.DOTALL)
-_REGEX = re.compile('((.*?){(.*?)})', re.DOTALL|re.M)
-_SEMICOLON_REGEX = re.compile(';(\s+)')
-_COLON_REGEX = re.compile(':(\s+)')
-
 
 class PremailerError(Exception):
     pass
-
-def _merge_styles(old, new, class_=''):
-    """
-    if ::
-      old = 'font-size:1px; color: red'
-    and ::
-      new = 'font-size:2px; font-weight: bold'
-    then ::
-      return 'color: red; font-size:2px; font-weight: bold'
-
-    In other words, the new style bits replace the old ones.
-
-    The @class_ parameter can be something like ':hover' and if that
-    is there, you split up the style with '{...} :hover{...}'
-    Note: old could be something like '{...} ::first-letter{...}'
-
-    """
-    news = {}
-    for k, v in [x.strip().split(':', 1) for x in new.split(';') if x.strip()]:
-        news[k.strip()] = v.strip()
-
-    groups = {}
-    grouping_REGEX = re.compile('([:\-\w]*){([^}]+)}')
-    grouped_split = grouping_REGEX.findall(old)
-    if grouped_split:
-        for old_class, old_content in grouped_split:
-            olds = {}
-            for k, v in [x.strip().split(':', 1) for x in old_content.split(';') if x.strip()]:
-                olds[k.strip()] = v.strip()
-            groups[old_class] = olds
-    else:
-        olds = {}
-        for k, v in [x.strip().split(':', 1) for x in old.split(';') if x.strip()]:
-            olds[k.strip()] = v.strip()
-        groups[''] = olds
-
-    # Perform the merge
-
-    merged = news
-    for k, v in groups.get(class_, {}).items():
-        if k not in merged:
-            merged[k] = v
-    groups[class_] = merged
-
-    if len(groups) == 1:
-        return '; '.join(['%s:%s' % (k, v) for (k, v) in groups.values()[0].items()])
-    else:
-        all = []
-        for class_, mergeable in sorted(groups.items(),
-                                        lambda x, y: cmp(x[0].count(':'), y[0].count(':'))):
-            all.append('%s{%s}' % (class_,
-                                   '; '.join(['%s:%s' % (k, v)
-                                              for (k, v)
-                                              in mergeable.items()])))
-        return ' '.join([x for x in all if x != '{}'])
 
 
 class Premailer(object):
@@ -84,7 +23,7 @@ class Premailer(object):
                  exclude_pseudoclasses=False,
                  keep_style_tags=False,
                  include_star_selectors=False,
-                 external_styles=None):
+                 external_styles=[]):
         self.html = html
         self.base_url = base_url
         self.preserve_internal_links = preserve_internal_links
@@ -97,28 +36,31 @@ class Premailer(object):
             external_styles = [external_styles]
         self.external_styles = external_styles
 
-    def _parse_style_rules(self, css_body):
-        leftover = []
-        rules = []
-        css_body = _CSS_COMMENTS.sub('', css_body)
-        for each in _REGEX.findall(css_body.strip()):
-            __, selectors, bulk = each
+    def _parse_stylesheet(self, page, stylesheet):
+        leftovers = []
+        for rule in stylesheet.cssRules:
+            if rule.type == cssutils.css.CSSRule.STYLE_RULE:
+                style = rule.style.cssText.strip()
+                for selector in rule.selectorList:
+                    sel_text = selector.selectorText
+                    pseudoclass = ''
+                    if '*' in sel_text and not self.include_star_selectors:
+                        leftovers.append(cssutils.css.CSSStyleRule(sel_text, style))
+                        continue
+                    elif ':' in sel_text: # pseudoclass
+                        if self.exclude_pseudoclasses:
+                            leftovers.append(cssutils.css.CSSStyleRule(sel_text, style))
+                            continue
+                        else:
+                            sel_text, pseudoclass = re.split(':', sel_text, 1)
 
-            bulk = _SEMICOLON_REGEX.sub(';', bulk.strip())
-            bulk = _COLON_REGEX.sub(':', bulk.strip())
-            if bulk.endswith(';'):
-                bulk = bulk[:-1]
-            for selector in [x.strip() for x in selectors.split(',') if x.strip()]:
-                if ':' in selector and self.exclude_pseudoclasses:
-                    # a pseudoclass
-                    leftover.append((selector, bulk))
-                    continue
-                elif selector == '*' and not self.include_star_selectors:
-                    continue
-
-                rules.append((selector, bulk))
-
-        return rules, leftover
+                    css_selector = CSSSelector(sel_text)
+                    for item in css_selector(page):
+                        if pseudoclass:
+                            self.styles[item].append((pseudoclass, style))
+                        else:
+                            self.styles[item].append(style)
+        return leftovers
 
     def transform(self, pretty_print=True):
         """change the self.html and return it with CSS turned into style
@@ -131,6 +73,8 @@ class Premailer(object):
         tree = etree.fromstring(self.html.strip(), parser).getroottree()
         page = tree.getroot()
 
+        cssutils.ser.prefs.useMinified()
+
         if page is None:
             print repr(self.html)
             raise PremailerError("Could not parse the html")
@@ -140,48 +84,53 @@ class Premailer(object):
         ## style selectors
         ##
 
-        rules = []
-
+        self.styles = defaultdict(list)
         for style in CSSSelector('style')(page):
             css_body = etree.tostring(style)
             css_body = css_body.split('>')[1].split('</')[0]
-            these_rules, these_leftover = self._parse_style_rules(css_body)
-            rules.extend(these_rules)
+            leftovers = self._parse_stylesheet(page, cssutils.parseString(css_body))
 
-            parent_of_style = style.getparent()
-            if these_leftover:
-                style.text = '\n'.join(['%s {%s}' % (k, v) for (k, v) in these_leftover])
+            if leftovers:
+                style.text = '\n'.join([r.cssText for r in leftovers])
             elif not self.keep_style_tags:
+                parent_of_style = style.getparent()
                 parent_of_style.remove(style)
 
-        if self.external_styles:
-            for stylefile in self.external_styles:
-                print stylefile
-                if stylefile.startswith('http://'):
-                    css_body = urllib.urlopen(stylefile).read()
-                elif os.path.exists(stylefile):
-                    try:
-                        f = codecs.open(stylefile)
-                        css_body = f.read()
-                    finally:
-                        f.close()
+        for stylefile in self.external_styles:
+            if stylefile.startswith('http://'):
+                leftovers = self._parse_stylesheet(page, cssutils.parseUrl(stylefile))
+            elif os.path.exists(stylefile):
+                leftovers = self._parse_stylesheet(page, cssutils.parseFile(stylefile))
+            else:
+                raise ValueError(u'Could not find external style: %s' % stylefile)
+
+        for element, rules in self.styles.iteritems():
+            rules += [element.attrib.get('style', '')]
+            declarations = []
+            pseudoclass_rules = defaultdict(list)
+            for rule in rules:
+                if not rule:
+                    continue
+                elif isinstance(rule, tuple): # pseudoclass
+                    pseudoclass, prules = rule
+                    pseudoclass_rules[pseudoclass].append(prules)
                 else:
-                    raise ValueError(u"Could not find external style: %s" % stylefile)
-                these_rules, these_leftover = self._parse_style_rules(css_body)
-                rules.extend(these_rules)
-
-        for selector, style in rules:
-            class_ = ''
-            if ':' in selector:
-                selector, class_ = re.split(':', selector, 1)
-                class_ = ':%s' % class_
-
-            sel = CSSSelector(selector)
-            for item in sel(page):
-                old_style = item.attrib.get('style','')
-                new_style = _merge_styles(old_style, style, class_)
-                item.attrib['style'] = new_style
-                self._style_to_basic_html_attributes(item, new_style)
+                    declarations.append(rule)
+            css_text = ';'.join(declarations)
+            style = cssutils.parseStyle(css_text)
+            if pseudoclass_rules:
+                prules_list = []
+                for pclass, prules in pseudoclass_rules.iteritems():
+                    pdecl = cssutils.parseStyle(';'.join(prules))
+                    prules_list.append(':%s{%s}' % (pclass, pdecl.cssText))
+                if css_text:
+                    element.attrib['style'] = '{%s} %s' % \
+                        (style.cssText, ' '.join(prules_list))
+                else:
+                    element.attrib['style'] = ' '.join(prules_list)
+            else:
+                element.attrib['style'] = style.cssText
+            self._style_to_basic_html_attributes(element, style)
 
         # now we can delete all 'class' attributes
         for item in page.xpath('//*[@class]'):
@@ -205,7 +154,7 @@ class Premailer(object):
         return etree.tostring(page, pretty_print=pretty_print)\
           .replace('<head/>','<head></head>')
 
-    def _style_to_basic_html_attributes(self, element, style_content):
+    def _style_to_basic_html_attributes(self, element, style):
         """given an element and styles like
         'background-color:red; font-family:Arial' turn some of that into HTML
         attributes. like 'bgcolor', etc.
@@ -213,33 +162,28 @@ class Premailer(object):
         Note, the style_content can contain pseudoclasses like:
         '{color:red; border:1px solid green} :visited{border:1px solid green}'
         """
-        if style_content.count('}') and \
-          style_content.count('{') == style_content.count('{'):
-            style_content = style_content.split('}')[0][1:]
 
         attributes = {}
-        for key, value in [x.split(':') for x in style_content.split(';')
-                           if len(x.split(':'))==2]:
-            key = key.strip()
+        for prop in style.getProperties():
+            name = prop.name
+            value = prop.propertyValue.cssText
 
-            if key == 'text-align':
+            if name == 'text-align':
                 attributes['align'] = value.strip()
-            elif key == 'background-color':
+            elif name == 'background-color':
                 attributes['bgcolor'] = value.strip()
-            elif key == 'width':
+            elif name == 'width':
                 value = value.strip()
                 if value.endswith('px'):
                     value = value[:-2]
                 attributes['width'] = value
-            #else:
-            #    print "key", repr(key)
-            #    print 'value', repr(value)
 
         for key, value in attributes.items():
             if key in element.attrib:
                 # already set, don't dare to overwrite
                 continue
             element.attrib[key] = value
+
 
 def transform(html, base_url=None):
     return Premailer(html, base_url=base_url).transform()
