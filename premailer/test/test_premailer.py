@@ -27,7 +27,8 @@ class PremailerTestCase(unittest.TestCase):
         premailer = Premailer(input_html, **kwargs)
         result_html = premailer.transform()
 
-        expected_html = WHITESPACE_BETWEEN_TAGS.sub('><', expected_html).strip()
+        expected_html = WHITESPACE_BETWEEN_TAGS.sub('><',
+                                                    expected_html).strip()
         result_html = WHITESPACE_BETWEEN_TAGS.sub('><', result_html).strip()
 
         if strip_whitespace_after_brace:
@@ -135,10 +136,11 @@ class PremailerTestCase(unittest.TestCase):
         <head>
         <title>Title</title>
         </head>
-        <body style="color:#123;background:url(http://example.com/bg.png);font-family:Omerta">
+        <body style="color:#123;background:url(http://example.com/bg.png);\
+font-family:Omerta">
         <h1>Hi!</h1>
         </body>
-        </html>""" #"
+        </html>"""
 
         self.assert_transformed_html_equal(html, expect_html)
 
@@ -165,7 +167,7 @@ class PremailerTestCase(unittest.TestCase):
         <body>
         <h1 style="color:#123">Hi!</h1>
         </body>
-        </html>""" #"
+        </html>"""
 
         self.assert_transformed_html_equal(html, expect_html)
 
@@ -228,7 +230,8 @@ class PremailerTestCase(unittest.TestCase):
         <head>
         <style type="text/css">a:hover{text-decoration:none}
         a:hover{border:1px solid green}
-        a:visited{border:1px solid green}p::first-letter{float:left;font-size:300%}
+        a:visited{border:1px solid green}
+        p::first-letter{float:left;font-size:300%}
         </style>
         </head>
         <body>
@@ -294,9 +297,15 @@ class PremailerTestCase(unittest.TestCase):
                       keep_style_tags=True)
         result_html = p.transform()
         self.assertIn('<html>', result_html)
-        self.assertIn("""<style media="only screen and (max-device-width: 480px)" type="text/css">*{line-height:normal !important;-webkit-text-size-adjust:125%}</style>""", result_html)
+        self.assertIn("""<style media="only screen and (max-device-width: \
+480px)" type="text/css">*{line-height:normal !important;\
+-webkit-text-size-adjust:125%}</style>""", result_html)
         self.assertIsNotNone(result_html.find('Add this to your calendar'))
-        self.assertIn('''style="{font-family:Lucida Grande,Arial,Helvetica,Geneva,Verdana,sans-serif;font-size:11px;color:#5b7ab3} :active{color:#5b7ab3;text-decoration:none} :visited{color:#5b7ab3;text-decoration:none} :hover{color:#5b7ab3;text-decoration:underline} :link{color:#5b7ab3;text-decoration:none}">Add this to your calendar''', result_html)
+        self.assertIn('''style="{font-family:Lucida Grande,Arial,Helvetica,\
+Geneva,Verdana,sans-serif;font-size:11px;color:#5b7ab3} :active{color:#5b7ab3;\
+text-decoration:none} :visited{color:#5b7ab3;text-decoration:none} :hover\
+{color:#5b7ab3;text-decoration:underline} :link{color:#5b7ab3;text-decoration:\
+none}">Add this to your calendar''', result_html)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_mailto_url(self):

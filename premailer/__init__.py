@@ -45,11 +45,14 @@ class Premailer(object):
                     sel_text = selector.selectorText
                     pseudoclass = ''
                     if '*' in sel_text and not self.include_star_selectors:
-                        leftovers.append(cssutils.css.CSSStyleRule(sel_text, style))
+                        leftovers.append(cssutils.css.CSSStyleRule(sel_text,
+                                                                   style))
                         continue
-                    elif ':' in sel_text: # pseudoclass
+                    elif ':' in sel_text:  # pseudoclass
                         if self.exclude_pseudoclasses:
-                            leftovers.append(cssutils.css.CSSStyleRule(sel_text, style))
+                            style_rule = cssutils.css.CSSStyleRule(sel_text,
+                                                                   style)
+                            leftovers.append(style_rule)
                             continue
                         else:
                             sel_text, pseudoclass = re.split(':', sel_text, 1)
@@ -88,7 +91,8 @@ class Premailer(object):
         for style in CSSSelector('style')(page):
             css_body = etree.tostring(style)
             css_body = css_body.split('>')[1].split('</')[0]
-            leftovers = self._parse_stylesheet(page, cssutils.parseString(css_body))
+            leftovers = self._parse_stylesheet(page,
+                                               cssutils.parseString(css_body))
 
             if leftovers:
                 style.text = '\n'.join([r.cssText for r in leftovers])
@@ -98,11 +102,12 @@ class Premailer(object):
 
         for stylefile in self.external_styles:
             if stylefile.startswith('http://'):
-                leftovers = self._parse_stylesheet(page, cssutils.parseUrl(stylefile))
+                self._parse_stylesheet(page, cssutils.parseUrl(stylefile))
             elif os.path.exists(stylefile):
-                leftovers = self._parse_stylesheet(page, cssutils.parseFile(stylefile))
+                self._parse_stylesheet(page, cssutils.parseFile(stylefile))
             else:
-                raise ValueError(u'Could not find external style: %s' % stylefile)
+                raise ValueError(u'Could not find external style: %s' % \
+                                 stylefile)
 
         for element, rules in self.styles.iteritems():
             rules += [element.attrib.get('style', '')]
@@ -111,7 +116,7 @@ class Premailer(object):
             for rule in rules:
                 if not rule:
                     continue
-                elif isinstance(rule, tuple): # pseudoclass
+                elif isinstance(rule, tuple):  # pseudoclass
                     pseudoclass, prules = rule
                     pseudoclass_rules[pseudoclass].append(prules)
                 else:
@@ -136,13 +141,11 @@ class Premailer(object):
         for item in page.xpath('//*[@class]'):
             del item.attrib['class']
 
-
         ##
         ## URLs
         ##
 
         if self.base_url:
-
             for attr in ('href', 'src'):
                 for item in page.xpath('//*[@%s]' % attr):
                     if attr == 'href' and self.preserve_internal_links \
@@ -151,8 +154,8 @@ class Premailer(object):
                     item.attrib[attr] = urlparse.urljoin(self.base_url,
                                                          item.attrib[attr])
 
-        return etree.tostring(page, pretty_print=pretty_print)\
-          .replace('<head/>','<head></head>')
+        return etree.tostring(page, pretty_print=pretty_print) \
+                    .replace('<head/>', '<head></head>')
 
     def _style_to_basic_html_attributes(self, element, style):
         """given an element and styles like
