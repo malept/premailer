@@ -15,8 +15,26 @@ else:
 
 from premailer import Premailer, etree
 
+WHITESPACE_AFTER_BRACE = re.compile('}\s+')
+WHITESPACE_BETWEEN_TAGS = re.compile('>\s*<')
+
 
 class PremailerTestCase(unittest.TestCase):
+
+    def assert_transformed_html_equal(self, input_html, expected_html,
+                                      strip_whitespace_after_brace=False,
+                                      **kwargs):
+        premailer = Premailer(input_html, **kwargs)
+        result_html = premailer.transform()
+
+        expected_html = WHITESPACE_BETWEEN_TAGS.sub('><', expected_html).strip()
+        result_html = WHITESPACE_BETWEEN_TAGS.sub('><', result_html).strip()
+
+        if strip_whitespace_after_brace:
+            expected_html = WHITESPACE_AFTER_BRACE.sub('}', expected_html)
+            result_html = WHITESPACE_AFTER_BRACE.sub('}', result_html)
+
+        self.assertEqual(expected_html, result_html)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_basic_html(self):
@@ -47,15 +65,7 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_base_url_fixer(self):
@@ -92,16 +102,9 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html, base_url='http://kungfupeople.com',
-                      preserve_internal_links=True)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html,
+                                           base_url='http://kungfupeople.com',
+                                           preserve_internal_links=True)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_style_block_with_external_urls(self):
@@ -137,15 +140,7 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>""" #"
 
-        p = Premailer(html)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_shortcut_function(self):
@@ -172,15 +167,7 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>""" #"
 
-        p = Premailer(html)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_pseudoclasses_included(self):
@@ -250,18 +237,9 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html, exclude_pseudoclasses=True)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        expect_html = re.sub('}\s+', '}', expect_html)
-        result_html = result_html.replace('}\n','}')
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html,
+                                           strip_whitespace_after_brace=True,
+                                           exclude_pseudoclasses=True)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_html_attributes(self):
@@ -301,18 +279,9 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html, exclude_pseudoclasses=True)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        expect_html = re.sub('}\s+', '}', expect_html)
-        result_html = result_html.replace('}\n','}')
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html,
+                                           strip_whitespace_after_brace=True,
+                                           exclude_pseudoclasses=True)
 
     def test_apple_newsletter_example(self):
         # stupidity test
@@ -352,15 +321,8 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html, base_url='http://kungfupeople.com')
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html,
+                                           base_url='http://kungfupeople.com')
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_class_removal(self):
@@ -388,15 +350,7 @@ class PremailerTestCase(unittest.TestCase):
         </body>
         </html>"""
 
-        p = Premailer(html)
-        result_html = p.transform()
-
-        whitespace_between_tags = re.compile('>\s*<',)
-
-        expect_html = whitespace_between_tags.sub('><', expect_html).strip()
-        result_html = whitespace_between_tags.sub('><', result_html).strip()
-
-        self.assertEqual(expect_html, result_html)
+        self.assert_transformed_html_equal(html, expect_html)
 
 if __name__ == '__main__':
         unittest.main()
