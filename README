@@ -18,6 +18,7 @@ Dependencies
 Python 2.5+ - http://www.python.org/
 python-lxml - http://pypi.python.org/pypi/lxml
 python-cssutils - http://pypi.python.org/pypi/cssutils
+python-yaml - pypi.python.org/pypi/PyYAML
 
 
 Support

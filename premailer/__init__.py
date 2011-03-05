@@ -2,15 +2,20 @@
 from collections import defaultdict
 import os
 import re
+import sys
 import urlparse
 
 import cssutils
 from lxml.cssselect import CSSSelector
 from lxml import etree
+import yaml
 
 __version__ = '1.9'
 
 __all__ = ['PremailerError', 'Premailer', 'transform']
+
+CLIENT_SUPPORT_YAML = os.path.join(os.path.dirname(__file__), 'data',
+                                   'client_support.yaml')
 
 
 class PremailerError(Exception):
@@ -23,7 +28,8 @@ class Premailer(object):
                  exclude_pseudoclasses=False,
                  keep_style_tags=False,
                  include_star_selectors=False,
-                 external_styles=[]):
+                 external_styles=[],
+                 support_warnings=False):
         self.html = html
         self.base_url = base_url
         self.preserve_internal_links = preserve_internal_links
@@ -35,11 +41,26 @@ class Premailer(object):
         if isinstance(external_styles, basestring):
             external_styles = [external_styles]
         self.external_styles = external_styles
+        self.support_warnings = support_warnings
+        if self.support_warnings:
+            self.support_matrix = \
+                yaml.load(open(CLIENT_SUPPORT_YAML))
+
+    def _check_style_support(self, style):
+        for prop in style.getProperties():
+            name = prop.name
+            if name in self.support_matrix['css_properties']:
+                unsupported = self.support_matrix['css_properties'][name]\
+                                                 ['unsupported_in']
+                print >> sys.stderr, '** WARNING: %s not supported in the ' \
+                      'following clients: %s' % (name, ', '.join(unsupported))
 
     def _parse_stylesheet(self, page, stylesheet):
         leftovers = []
         for rule in stylesheet.cssRules:
             if rule.type == cssutils.css.CSSRule.STYLE_RULE:
+                if self.support_warnings:
+                    self._check_style_support(rule.style)
                 style = rule.style.cssText.strip()
                 for selector in rule.selectorList:
                     sel_text = selector.selectorText

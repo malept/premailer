@@ -5,6 +5,7 @@ This test verifies that CSS styles properly merges inline with DOM elements.
 
 """
 
+from cStringIO import StringIO
 import re
 import sys
 
@@ -360,6 +361,42 @@ none}">Add this to your calendar''', result_html)
         </html>"""
 
         self.assert_transformed_html_equal(html, expect_html)
+
+    @unittest.skipIf(not etree, 'ElementTree is required')
+    def test_support_warnings(self):
+        """Ensure that support warnings are emitted when specified"""
+        html = """<html>
+        <head>
+        <title>Title</title>
+        <style type="text/css">
+        .text { margin:2px }
+        </style>
+        </head>
+        <body>
+        <h1 class="text">Hi!</h1>
+        <p><strong class="text">Yes!</strong></p>
+        </body>
+        </html>"""
+
+        expect_html = """<html>
+        <head>
+        <title>Title</title>
+        </head>
+        <body>
+        <h1 style="margin:2px">Hi!</h1>
+        <p><strong style="margin:2px">Yes!</strong></p>
+        </body>
+        </html>"""
+
+        try:
+            fake_err = StringIO()
+            sys.stderr = fake_err
+            self.assert_transformed_html_equal(html, expect_html,
+                                               support_warnings=True)
+            self.assertIn('WARNING: margin not supported in the following',
+                          fake_err.getvalue())
+        finally:
+            sys.stderr = sys.__stderr__
 
 if __name__ == '__main__':
         unittest.main()
