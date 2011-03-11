@@ -15,7 +15,7 @@ if sys.version_info >= (2, 7):
 else:
     import unittest2 as unittest
 
-from premailer import Premailer, etree
+from premailer import Premailer, etree, transform
 
 BASE_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              'data')
@@ -27,9 +27,13 @@ class PremailerTestCase(unittest.TestCase):
 
     def assert_transformed_html_equal(self, input_html, expected_html,
                                       strip_whitespace_after_brace=False,
+                                      use_shortcut_function=False,
                                       **kwargs):
-        premailer = Premailer(input_html, **kwargs)
-        result_html = premailer.transform()
+        if use_shortcut_function:
+            result_html = transform(input_html, **kwargs)
+        else:
+            premailer = Premailer(input_html, **kwargs)
+            result_html = premailer.transform()
 
         expected_html = WHITESPACE_BETWEEN_TAGS.sub('><',
                                                     expected_html).strip()
@@ -87,7 +91,7 @@ class PremailerTestCase(unittest.TestCase):
         # You can do it this way:
         #   from premailer import transform
         #   print transform(html, base_url=base_url)
-        self.assert_transformed_files_equal('shortcut_function')
+        self.assert_transformed_files_equal('shortcut_function', use_shortcut_function=True)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_pseudoclasses_included(self):
