@@ -32,6 +32,7 @@ setup(
     author_email = 'rcoyner@gmail.com',
     description = 'Converts standard HTML into a format for e-mail delivery.',
     packages = packages,
+    scripts = ['bin/premailer'],
     classifiers = ['Development Status :: 5 - Production/Stable',
                    'Environment :: X11 Applications',
                    'Environment :: Other Environment',

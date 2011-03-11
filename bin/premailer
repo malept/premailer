@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+from optparse import OptionParser
+from premailer import Premailer
+import sys
+
+
+def main(args):
+    parser = OptionParser(usage='Usage: %prog [options] [htmlfile]')
+    parser.add_option('-b', '--base-url', default=None, dest='base_url',
+                      help='The base URL used to resolve relative links')
+    parser.add_option('-e', '--exclude-pseudoclasses', action='store_true',
+                      default=False, dest='exclude_pseudoclasses',
+                      help='Whether to move rules with pseudoclasses into '
+                           'inline style attributes')
+    parser.add_option('-k', '--keep-style-tags', action='store_true',
+                      default=False, dest='keep_style_tags',
+                      help='Whether to delete the <style/> tag once it has '
+                           'been processed')
+    parser.add_option('-o', '--output', default=None, dest='output_file',
+                      metavar='FILE',
+                      help='The file to output the transformed HTML (defaults '
+                           'to STDOUT)')
+    parser.add_option('-p', '--preserve-internal-links', action='store_true',
+                      default=False, dest='preserve_internal_links',
+                      help='Whether to preserve internal links')
+    parser.add_option('-s', '--include-star-selectors', action='store_true',
+                      default=False, dest='include_star_selectors',
+                      help='Whether to expand star selectors (e.g., '
+                           '* {foo:bar;})')
+    parser.add_option('-w', '--support-warnings', action='store_true',
+                      default=False, dest='support_warnings',
+                      help='Emit warnings when using a CSS property that does '
+                           'not work in one or more email clients')
+    parser.add_option('-x', '--external-style', action='append', default=[],
+                      dest='external_styles', metavar='STYLESHEET',
+                      help='External stylesheet(s) which are processed after '
+                           'the inline styles (can be specified multiple '
+                           'times)')
+
+    options, args = parser.parse_args(args[1:])
+    if args:
+        with open(args[0]) as f:
+            html = f.read()
+    else:
+        html = sys.stdin.read()
+    kwargs = options.__dict__
+    output_file = kwargs.pop('output_file', None)
+    premailer = Premailer(html, **kwargs)
+    result = premailer.transform()
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write(result)
+    else:
+        sys.stdout.write(result)
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
