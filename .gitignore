@@ -2,3 +2,5 @@
 *.pyo
 
 build/
+dist/
+MANIFEST
