@@ -65,7 +65,8 @@ class PremailerTestCase(unittest.TestCase):
     def assert_transformed_files_equal(self, name, **kwargs):
         result_html, stderr = self.run_premailer('test_%s' % name, **kwargs)
         expected_html = self.read_html_file('test_%s_expected' % name)
-        self.assert_transformed_html_equal(result_html, expected_html, **kwargs)
+        self.assert_transformed_html_equal(result_html, expected_html,
+                                           **kwargs)
         return result_html, stderr
 
     def test_basic_html(self):

@@ -91,7 +91,8 @@ class PremailerTestCase(unittest.TestCase):
         # You can do it this way:
         #   from premailer import transform
         #   print transform(html, base_url=base_url)
-        self.assert_transformed_files_equal('shortcut_function', use_shortcut_function=True)
+        self.assert_transformed_files_equal('shortcut_function',
+                                            use_shortcut_function=True)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_pseudoclasses_included(self):

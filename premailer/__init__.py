@@ -50,8 +50,8 @@ class Premailer(object):
         for prop in style.getProperties():
             name = prop.name
             if name in self.support_matrix['css_properties']:
-                unsupported = self.support_matrix['css_properties'][name]\
-                                                 ['unsupported_in']
+                css_properties = self.support_matrix['css_properties']
+                unsupported = css_properties[name]['unsupported_in']
                 print >> sys.stderr, '** WARNING: %s not supported in the ' \
                       'following clients: %s' % (name, ', '.join(unsupported))
 
