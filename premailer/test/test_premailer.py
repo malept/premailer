@@ -173,5 +173,11 @@ none}">Add this to your calendar''', result_html)
         finally:
             sys.stderr = sys.__stderr__
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
+    def test_duplicate_property_removal(self):
+        """Ensure that there are no duplicate properties in a given style
+        attribute."""
+        self.assert_transformed_files_equal('duplicate_property_removal')
+
 if __name__ == '__main__':
         unittest.main()

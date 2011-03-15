@@ -98,6 +98,7 @@ class Premailer(object):
         page = tree.getroot()
 
         cssutils.ser.prefs.useMinified()
+        cssutils.ser.prefs.keepAllProperties = False
 
         if page is None:
             print repr(self.html)
