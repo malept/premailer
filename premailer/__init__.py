@@ -7,7 +7,7 @@ import urlparse
 
 import cssutils
 from lxml.cssselect import CSSSelector
-from lxml import etree
+import lxml.html as etree
 import yaml
 
 __version__ = '1.9'
@@ -93,8 +93,7 @@ class Premailer(object):
         if etree is None:
             return self.html
 
-        parser = etree.HTMLParser()
-        tree = etree.fromstring(self.html.strip(), parser).getroottree()
+        tree = etree.fromstring(self.html.strip()).getroottree()
         page = tree.getroot()
 
         cssutils.ser.prefs.useMinified()

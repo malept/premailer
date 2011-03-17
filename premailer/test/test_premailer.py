@@ -179,5 +179,10 @@ none}">Add this to your calendar''', result_html)
         attribute."""
         self.assert_transformed_files_equal('duplicate_property_removal')
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
+    def test_intact_empty_anchors(self):
+        """Ensure that empty anchors are preserved with an end tag."""
+        self.assert_transformed_files_equal('intact_empty_anchors')
+
 if __name__ == '__main__':
         unittest.main()
