@@ -29,7 +29,8 @@ class Premailer(object):
                  keep_style_tags=False,
                  include_star_selectors=False,
                  external_styles=[],
-                 support_warnings=False):
+                 support_warnings=False,
+                 keep_classnames=[]):
         self.html = html
         self.base_url = base_url
         self.preserve_internal_links = preserve_internal_links
@@ -45,6 +46,7 @@ class Premailer(object):
         if self.support_warnings:
             self.support_matrix = \
                 yaml.load(open(CLIENT_SUPPORT_YAML))
+        self.keep_classnames = set(keep_classnames)
 
     def _check_style_support(self, style):
         for prop in style.getProperties():
@@ -158,9 +160,15 @@ class Premailer(object):
                 element.attrib['style'] = style.cssText
             self._style_to_basic_html_attributes(element, style)
 
-        # now we can delete all 'class' attributes
+        # now we can delete all 'class' attributes (that aren't in the
+        # whitelist)
         for item in page.xpath('//*[@class]'):
-            del item.attrib['class']
+            classes = set(item.attrib['class'].split())
+            remaining_classes = classes - (classes ^ self.keep_classnames)
+            if len(remaining_classes) == 0:
+                del item.attrib['class']
+            else:
+                item.attrib['class'] = ' '.join(remaining_classes)
 
         ##
         ## URLs

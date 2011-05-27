@@ -9,6 +9,10 @@ def main(args):
     parser = OptionParser(usage='Usage: %prog [options] [htmlfile]')
     parser.add_option('-b', '--base-url', default=None, dest='base_url',
                       help='The base URL used to resolve relative links')
+    parser.add_option('-c', '--keep-classname', action='append', default=[],
+                      dest='keep_classnames', metavar='CLASS',
+                      help='Class name(s) which will not be stripped from the '
+                           'class attribute (can be specified multiple times)')
     parser.add_option('-e', '--exclude-pseudoclasses', action='store_true',
                       default=False, dest='exclude_pseudoclasses',
                       help='Whether to move rules with pseudoclasses into '
