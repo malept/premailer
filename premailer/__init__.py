@@ -143,7 +143,7 @@ class Premailer(object):
                     pseudoclass, prules = rule
                     pseudoclass_rules[pseudoclass].append(prules)
                 else:
-                    declarations.append(rule)
+                    declarations.append(rule.strip(';'))
             css_text = ';'.join(declarations)
             style = cssutils.parseStyle(css_text)
             if pseudoclass_rules:

@@ -184,5 +184,11 @@ none}">Add this to your calendar''', result_html)
         """Ensure that empty anchors are preserved with an end tag."""
         self.assert_transformed_files_equal('intact_empty_anchors')
 
+    @unittest.skipIf(not etree, 'ElementTree is required')
+    def test_declaration_trailing_comment(self):
+        """Ensure that individual style declarations don't contain
+        leading/trailing semicolons."""
+        self.assert_transformed_files_equal('declaration_trailing_comment')
+
 if __name__ == '__main__':
         unittest.main()
