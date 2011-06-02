@@ -16,6 +16,26 @@ __all__ = ['PremailerError', 'Premailer', 'transform']
 
 CLIENT_SUPPORT_YAML = os.path.join(os.path.dirname(__file__), 'data',
                                    'client_support.yaml')
+# spelling of parsable: see
+# http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=16;bug=124757
+PARSABLE_PSEUDOCLASSES = [
+    # no args
+    'empty',
+    'first-child',
+    'first-of-type',
+    'last-child',
+    'last-of-type',
+    'only-child',
+    'only-of-type',
+    'root',
+    # args
+    'contains',
+    'not',
+    'nth-child',
+    'nth-last-child',
+    'nth-last-of-type',
+    'nth-of-type',
+]
 
 
 class PremailerError(Exception):
@@ -57,6 +77,21 @@ class Premailer(object):
                 print >> sys.stderr, '** WARNING: %s not supported in the ' \
                       'following clients: %s' % (name, ', '.join(unsupported))
 
+    def _selector_token_is_parsable(self, token):
+        '''Determines whether a CSS selector token can be machine parsed. For
+        example, the :first-child pseudo-class can be parsed, but the :visited
+        pseudo-class cannot.
+        '''
+        if token.type == 'pseudo-element':
+            return False
+        elif token.type == 'pseudo-class':
+            if token.value[1:] not in PARSABLE_PSEUDOCLASSES:
+                return False
+        return True
+
+    def _split_selector(self, selector_text):
+        return re.split(':', selector_text, 1)
+
     def _parse_stylesheet(self, page, stylesheet):
         leftovers = []
         for rule in stylesheet.cssRules:
@@ -66,19 +101,26 @@ class Premailer(object):
                 style = rule.style.cssText.strip()
                 for selector in rule.selectorList:
                     sel_text = selector.selectorText
-                    pseudoclass = ''
+                    pseudoclass = None
                     if '*' in sel_text and not self.include_star_selectors:
                         leftovers.append(cssutils.css.CSSStyleRule(sel_text,
                                                                    style))
                         continue
                     elif ':' in sel_text:  # pseudoclass
-                        if self.exclude_pseudoclasses:
+                        # FIXME this uses an "internal readonly attribute", any
+                        # advice on refactoring this without writing a selector
+                        # parser myself would be greatly appreciated.
+                        for token in selector.seq:
+                            if not self._selector_token_is_parsable(token):
+                                sel_text, pseudoclass = \
+                                        self._split_selector(sel_text)
+                                break
+                        if pseudoclass and self.exclude_pseudoclasses:
+                            sel_text = selector.selectorText
                             style_rule = cssutils.css.CSSStyleRule(sel_text,
                                                                    style)
                             leftovers.append(style_rule)
                             continue
-                        else:
-                            sel_text, pseudoclass = re.split(':', sel_text, 1)
 
                     css_selector = CSSSelector(sel_text)
                     for item in css_selector(page):

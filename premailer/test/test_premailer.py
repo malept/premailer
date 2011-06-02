@@ -121,6 +121,15 @@ class PremailerTestCase(unittest.TestCase):
                                             exclude_pseudoclasses=True)
 
     @unittest.skipIf(not etree, 'ElementTree is required')
+    def test_css_with_whitelisted_pseudoclasses_included(self):
+        """Skip things like `a:hover{}` and keep them in the style block, but
+        parse things like `p:first-child{}`."""
+        basename = 'css_with_whitelisted_pseudoclasses_included'
+        self.assert_transformed_files_equal(basename,
+                                            strip_whitespace_after_brace=True,
+                                            exclude_pseudoclasses=True)
+
+    @unittest.skipIf(not etree, 'ElementTree is required')
     def test_css_with_html_attributes(self):
         """Some CSS styles can be applied as normal HTML attribute like
         'background-color' can be turned into 'bgcolor'
